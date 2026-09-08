@@ -1,0 +1,216 @@
+:root {
+  --bg: #0e1116;
+  --surface: #171c24;
+  --text: #f2f5f9;
+  --muted: #98a3b3;
+  --accent: #6ee7a8;
+  --error: #ff9d9d;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 0.75rem)
+    calc(env(safe-area-inset-right) + 1rem)
+    calc(env(safe-area-inset-bottom) + 1.5rem)
+    calc(env(safe-area-inset-left) + 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.app-bar h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--muted);
+}
+
+.icon-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid #2a3342;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.section-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.countdown {
+  text-align: center;
+}
+
+.units {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.unit {
+  display: flex;
+  flex-direction: column;
+  min-width: 4rem;
+}
+
+.value {
+  font-size: clamp(2.5rem, 14vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.unit-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.clock {
+  margin-top: 0.75rem;
+  font-size: clamp(1.5rem, 8vw, 2rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.colon {
+  opacity: 0.5;
+  padding: 0 0.15rem;
+}
+
+.working {
+  background: var(--surface);
+  border-radius: 1rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.working-primary {
+  margin: 0;
+  font-size: clamp(1.5rem, 7vw, 2rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.working-secondary {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.working-maths {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.message {
+  margin: auto 0 0;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid #2a3342;
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: var(--error);
+}
+
+.weekdays {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.weekday {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid #2a3342;
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.weekday.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0e1116;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
