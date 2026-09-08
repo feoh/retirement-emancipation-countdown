@@ -46,6 +46,14 @@ export function formatLocalDate(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+export function formatDisplayDate(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
 export type ValidationErrors = Partial<Record<keyof Settings, string>>;
 
 export function validate(settings: Settings): ValidationErrors {
@@ -57,11 +65,61 @@ export function validate(settings: Settings): ValidationErrors {
 
   const vacation = settings.vacationDaysPerYear;
   if (!Number.isInteger(vacation) || vacation < 0 || vacation > 365) {
-    errors.vacationDaysPerYear =
-      "Enter a whole number between 0 and 365.";
+    errors.vacationDaysPerYear = "Enter a whole number between 0 and 365.";
   }
 
   return errors;
+}
+
+export type SettingsParseResult =
+  { ok: true; settings: Settings } | { ok: false; error: string };
+
+export function settingsFromUnknown(
+  value: unknown,
+  allowLegacyDefaults = false,
+): SettingsParseResult {
+  if (typeof value !== "object" || value === null) {
+    return { ok: false, error: "Settings are missing or unreadable." };
+  }
+
+  const incoming = value as Record<string, unknown>;
+  const weekdays = incoming.workingWeekdays;
+  if (
+    !Array.isArray(weekdays) ||
+    weekdays.length !== 7 ||
+    weekdays.some((day) => typeof day !== "boolean")
+  ) {
+    return { ok: false, error: "Working days are unreadable." };
+  }
+
+  const motion =
+    incoming.motion ?? (allowLegacyDefaults ? "system" : undefined);
+  if (motion !== "system" && motion !== "always" && motion !== "never") {
+    return { ok: false, error: "Motion preference is unreadable." };
+  }
+
+  const hasCelebrated =
+    incoming.hasCelebrated ?? (allowLegacyDefaults ? false : undefined);
+  if (typeof hasCelebrated !== "boolean") {
+    return { ok: false, error: "Celebration state is unreadable." };
+  }
+
+  if (
+    typeof incoming.firstRetiredDay !== "string" ||
+    typeof incoming.vacationDaysPerYear !== "number"
+  ) {
+    return { ok: false, error: "Retirement settings are unreadable." };
+  }
+
+  const settings: Settings = {
+    firstRetiredDay: incoming.firstRetiredDay,
+    workingWeekdays: weekdays as unknown as WorkingWeekdays,
+    vacationDaysPerYear: incoming.vacationDaysPerYear,
+    motion,
+    hasCelebrated,
+  };
+  const firstError = Object.values(validate(settings))[0];
+  return firstError ? { ok: false, error: firstError } : { ok: true, settings };
 }
 
 export interface ExportEnvelope {
@@ -118,41 +176,17 @@ export function importSettings(raw: string): ImportResult {
     };
   }
 
-  const incoming = envelope.settings;
-  if (typeof incoming !== "object" || incoming === null) {
-    return { ok: false, error: "This backup has no settings in it." };
-  }
-
-  const weekdays = (incoming as Settings).workingWeekdays;
-  if (
-    !Array.isArray(weekdays) ||
-    weekdays.length !== 7 ||
-    weekdays.some((day) => typeof day !== "boolean")
-  ) {
-    return { ok: false, error: "This backup's working days are unreadable." };
-  }
-
-  const motion = (incoming as Settings).motion;
-  const validMotion =
-    motion === "system" || motion === "always" || motion === "never";
-
-  const settings: Settings = {
-    firstRetiredDay: String((incoming as Settings).firstRetiredDay ?? ""),
-    workingWeekdays: weekdays as unknown as WorkingWeekdays,
-    vacationDaysPerYear: Number((incoming as Settings).vacationDaysPerYear),
-    motion: validMotion ? motion : "system",
-    hasCelebrated: Boolean((incoming as Settings).hasCelebrated),
-  };
-
-  const errors = validate(settings);
-  const firstError = Object.values(errors)[0];
-  if (firstError) {
-    return { ok: false, error: `This backup isn't usable: ${firstError}` };
+  const parsedSettings = settingsFromUnknown(envelope.settings);
+  if (!parsedSettings.ok) {
+    return {
+      ok: false,
+      error: `This backup isn't usable: ${parsedSettings.error}`,
+    };
   }
 
   return {
     ok: true,
-    settings,
+    settings: parsedSettings.settings,
     exportedAt:
       typeof envelope.exportedAt === "string" ? envelope.exportedAt : null,
   };

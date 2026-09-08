@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: npm run format:check
+        language: system
+        pass_filenames: false
+      - id: eslint
+        name: eslint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+      - id: rustfmt
+        name: rustfmt
+        entry: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+        language: system
+        pass_filenames: false
+      - id: clippy
+        name: clippy
+        entry: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+        language: system
+        pass_filenames: false

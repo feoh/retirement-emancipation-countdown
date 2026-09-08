@@ -15,6 +15,21 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
+export function addYearsLocal(date: Date, years: number): Date {
+  const year = date.getFullYear() + years;
+  const month = date.getMonth();
+  const day = Math.min(date.getDate(), daysInMonth(year, month));
+  return new Date(
+    year,
+    month,
+    day,
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds(),
+  );
+}
+
 export function addMonthsLocal(date: Date, months: number): Date {
   const absoluteMonth = date.getMonth() + months;
   const year = date.getFullYear() + Math.floor(absoluteMonth / 12);
@@ -69,17 +84,29 @@ const ZERO: Breakdown = {
 export function decompose(from: Date, to: Date): Breakdown {
   if (to.getTime() <= from.getTime()) return { ...ZERO };
 
+  let years = to.getFullYear() - from.getFullYear();
+  while (years > 0 && addYearsLocal(from, years).getTime() > to.getTime()) {
+    years--;
+  }
+  while (addYearsLocal(from, years + 1).getTime() <= to.getTime()) {
+    years++;
+  }
+
+  const afterYears = addYearsLocal(from, years);
   let months =
-    (to.getFullYear() - from.getFullYear()) * 12 +
-    (to.getMonth() - from.getMonth());
-  while (months > 0 && addMonthsLocal(from, months).getTime() > to.getTime()) {
+    (to.getFullYear() - afterYears.getFullYear()) * 12 +
+    (to.getMonth() - afterYears.getMonth());
+  while (
+    months > 0 &&
+    addMonthsLocal(afterYears, months).getTime() > to.getTime()
+  ) {
     months--;
   }
-  while (addMonthsLocal(from, months + 1).getTime() <= to.getTime()) {
+  while (addMonthsLocal(afterYears, months + 1).getTime() <= to.getTime()) {
     months++;
   }
 
-  const afterMonths = addMonthsLocal(from, months);
+  const afterMonths = addMonthsLocal(afterYears, months);
 
   let days = Math.floor((to.getTime() - afterMonths.getTime()) / MS_PER_DAY);
   while (days > 0 && addDaysLocal(afterMonths, days).getTime() > to.getTime()) {
@@ -100,8 +127,8 @@ export function decompose(from: Date, to: Date): Breakdown {
   const seconds = remainder - minutes * 60;
 
   return {
-    years: Math.floor(months / 12),
-    months: months % 12,
+    years,
+    months,
     days,
     hours,
     minutes,

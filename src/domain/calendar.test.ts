@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   addMonthsLocal,
+  addYearsLocal,
   calendarDaysBetween,
   decompose,
   retirementMoment,
 } from "./calendar";
+
+describe("addYearsLocal", () => {
+  it("clamps leap day when the target year is not a leap year", () => {
+    const result = addYearsLocal(new Date(2028, 1, 29), 1);
+    expect(result.getFullYear()).toBe(2029);
+    expect(result.getMonth()).toBe(1);
+    expect(result.getDate()).toBe(28);
+  });
+});
 
 describe("addMonthsLocal", () => {
   it("clamps to the last day when the target month is shorter", () => {
@@ -85,6 +95,18 @@ describe("decompose", () => {
     expect(result.days).toBe(5);
   });
 
+  it("descends through years before months after leap day", () => {
+    const result = decompose(new Date(2028, 1, 29), new Date(2029, 2, 28));
+    expect(result).toEqual({
+      years: 1,
+      months: 1,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    });
+  });
+
   it("carries the time-of-day remainder", () => {
     const result = decompose(
       new Date(2026, 0, 1, 6, 5, 3),
@@ -117,16 +139,43 @@ describe("decompose", () => {
   });
 });
 
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+describe.runIf(timeZone === "America/New_York")(
+  "DST behavior in America/New_York",
+  () => {
+    it("counts calendar days across spring-forward", () => {
+      const before = new Date(2026, 2, 7);
+      const after = new Date(2026, 2, 9);
+      expect(before.getTimezoneOffset()).not.toBe(after.getTimezoneOffset());
+      expect(calendarDaysBetween(before, after)).toBe(2);
+    });
+
+    it("counts calendar days across fall-back", () => {
+      const before = new Date(2026, 9, 31);
+      const after = new Date(2026, 10, 2);
+      expect(before.getTimezoneOffset()).not.toBe(after.getTimezoneOffset());
+      expect(calendarDaysBetween(before, after)).toBe(2);
+    });
+  },
+);
+
 describe("calendarDaysBetween", () => {
   it("counts calendar days regardless of time of day", () => {
     expect(
-      calendarDaysBetween(new Date(2026, 0, 1, 23, 0), new Date(2026, 0, 2, 1, 0)),
+      calendarDaysBetween(
+        new Date(2026, 0, 1, 23, 0),
+        new Date(2026, 0, 2, 1, 0),
+      ),
     ).toBe(1);
   });
 
   it("is zero within the same day", () => {
     expect(
-      calendarDaysBetween(new Date(2026, 0, 1, 0, 1), new Date(2026, 0, 1, 23, 59)),
+      calendarDaysBetween(
+        new Date(2026, 0, 1, 0, 1),
+        new Date(2026, 0, 1, 23, 59),
+      ),
     ).toBe(0);
   });
 

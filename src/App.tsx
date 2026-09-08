@@ -1,29 +1,46 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { RetirementCelebration } from "./RetirementCelebration";
+import { SettingsScreen } from "./SettingsScreen";
+import { TransferScreen } from "./TransferScreen";
 import { decompose, retirementMoment } from "./domain/calendar";
 import { messageForDay } from "./domain/messages";
 import {
   DEFAULT_SETTINGS,
+  formatDisplayDate,
   formatLocalDate,
   parseLocalDate,
-  validate,
   type Settings,
 } from "./domain/settings";
-import { estimateWorkingTime, type WorkingWeekdays } from "./domain/workdays";
+import { estimateWorkingTime } from "./domain/workdays";
 import { flushSettings, loadSettings, saveSettings } from "./persistence";
 import "./App.css";
-
-const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
 function useNow(): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
+    const update = () => setNow(new Date());
+    const updateWhenVisible = () => {
+      if (document.visibilityState === "visible") update();
+    };
+    const timer = window.setInterval(update, 1000);
+    document.addEventListener("visibilitychange", updateWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", updateWhenVisible);
+    };
   }, []);
   return now;
 }
 
-function Countdown({ label, from, to }: { label: string; from: Date; to: Date }) {
+function Countdown({
+  label,
+  from,
+  to,
+}: {
+  label: string;
+  from: Date;
+  to: Date;
+}) {
   const parts = decompose(from, to);
   const spoken =
     `${parts.years} years, ${parts.months} months, ${parts.days} days, ` +
@@ -57,175 +74,223 @@ function Countdown({ label, from, to }: { label: string; from: Date; to: Date })
   );
 }
 
+function StorageNotice({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <aside className="notice" role="status">
+      <span>{message}</span>
+      <button type="button" onClick={onDismiss}>
+        Dismiss
+      </button>
+    </aside>
+  );
+}
+
 export default function App() {
   const now = useNow();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [view, setView] = useState<"dashboard" | "settings" | "transfer">(
+    "dashboard",
+  );
+  const [storageNotice, setStorageNotice] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings()
-      .then((stored) => {
-        setSettings(stored);
-        setEditing(!parseLocalDate(stored.firstRetiredDay));
+      .then((result) => {
+        setSettings(result.settings);
+        setStorageNotice(result.notice);
       })
-      .catch(() => setEditing(true))
       .finally(() => setLoaded(true));
   }, []);
 
   useEffect(() => {
-    const flush = () => void flushSettings().catch(() => {});
+    const flush = () => {
+      void flushSettings().catch(() =>
+        setStorageNotice(
+          "The latest settings could not be flushed to storage. Keep the app open and try again.",
+        ),
+      );
+    };
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     window.addEventListener("blur", flush);
-    document.addEventListener("visibilitychange", flush);
+    document.addEventListener("visibilitychange", flushWhenHidden);
     return () => {
       window.removeEventListener("blur", flush);
-      document.removeEventListener("visibilitychange", flush);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
     };
   }, []);
 
-  const errors = validate(settings);
-  const target = parseLocalDate(settings.firstRetiredDay);
-  const retired = target !== null && now >= retirementMoment(target);
+  if (!loaded) return <main className="app" aria-busy="true" />;
 
-  const working = useMemo(() => {
-    if (!target) return null;
-    return estimateWorkingTime(
-      now,
-      retirementMoment(target),
-      settings.workingWeekdays,
-      settings.vacationDaysPerYear,
+  const target = parseLocalDate(settings.firstRetiredDay);
+  const onboarding = target === null;
+
+  function commitSettings(next: Settings) {
+    const nextTarget = parseLocalDate(next.firstRetiredDay);
+    const resetCelebration =
+      nextTarget !== null && now < retirementMoment(nextTarget);
+    const saved = {
+      ...next,
+      hasCelebrated: resetCelebration ? false : next.hasCelebrated,
+    };
+    setSettings(saved);
+    setView("dashboard");
+    void saveSettings(saved).catch(() =>
+      setStorageNotice(
+        "Settings could not be saved. They will remain on screen while the app is open.",
+      ),
     );
-    // Recompute per calendar day, not per tick: only the date affects the count.
-  }, [
-    formatLocalDate(now),
-    settings.firstRetiredDay,
+  }
+
+  if (onboarding || view === "settings") {
+    return (
+      <main className="app">
+        {storageNotice && (
+          <StorageNotice
+            message={storageNotice}
+            onDismiss={() => setStorageNotice(null)}
+          />
+        )}
+        <SettingsScreen
+          initialSettings={settings}
+          onboarding={onboarding}
+          onSave={commitSettings}
+          onCancel={onboarding ? undefined : () => setView("dashboard")}
+        />
+      </main>
+    );
+  }
+
+  if (view === "transfer") {
+    return (
+      <main className="app">
+        {storageNotice && (
+          <StorageNotice
+            message={storageNotice}
+            onDismiss={() => setStorageNotice(null)}
+          />
+        )}
+        <TransferScreen
+          settings={settings}
+          onBack={() => setView("dashboard")}
+          onImport={commitSettings}
+        />
+      </main>
+    );
+  }
+
+  const retirement = retirementMoment(target);
+  const retired = now >= retirement;
+  const working = estimateWorkingTime(
+    now,
+    retirement,
     settings.workingWeekdays,
     settings.vacationDaysPerYear,
-  ]);
-
+  );
   const message = messageForDay(formatLocalDate(now), retired);
 
-  function update(patch: Partial<Settings>) {
-    setSettings((current) => {
-      const next = { ...current, ...patch };
-      if (Object.keys(validate(next)).length === 0) {
-        void saveSettings(next).catch(() => {});
-      }
-      return next;
-    });
+  function markCelebrated() {
+    if (settings.hasCelebrated) return;
+    const celebrated = { ...settings, hasCelebrated: true };
+    setSettings(celebrated);
+    void saveSettings(celebrated).catch(() =>
+      setStorageNotice(
+        "The celebration was shown, but its saved state could not be updated.",
+      ),
+    );
   }
-
-  function toggleWeekday(index: number) {
-    const next = [...settings.workingWeekdays] as unknown as WorkingWeekdays;
-    (next as unknown as boolean[])[index] = !settings.workingWeekdays[index];
-    update({ workingWeekdays: next });
-  }
-
-  if (!loaded) return <main className="app" />;
 
   return (
     <main className="app">
       <header className="app-bar">
-        <h1>Retirement Countdown</h1>
-        <button
-          type="button"
-          className="icon-button"
-          aria-expanded={editing}
-          onClick={() => setEditing((open) => !open)}
-        >
-          {editing ? "Done" : "Settings"}
-        </button>
+        <div>
+          <h1>Retirement Countdown</h1>
+          <p className="target-date">
+            {retired ? "Retired since" : "First free day"}:{" "}
+            {formatDisplayDate(target)}
+          </p>
+        </div>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setView("transfer")}
+          >
+            Back up
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setView("settings")}
+          >
+            Settings
+          </button>
+        </div>
       </header>
 
-      {target && !editing && (
-        <>
-          {retired ? (
-            <Countdown label="You are retired" from={retirementMoment(target)} to={now} />
-          ) : (
-            <Countdown label="Time remaining" from={now} to={retirementMoment(target)} />
-          )}
+      {storageNotice && (
+        <StorageNotice
+          message={storageNotice}
+          onDismiss={() => setStorageNotice(null)}
+        />
+      )}
 
-          {!retired && working && (
-            <section className="working">
-              <h2 className="section-title">Estimated working time</h2>
-              {working.tracked ? (
-                <>
-                  <p className="working-primary">
-                    {working.netWorkingDays.toLocaleString()} working days
-                  </p>
-                  {working.netWorkingWeeks !== null && (
-                    <p className="working-secondary">
-                      {working.netWorkingWeeks.toLocaleString()} weeks
-                    </p>
-                  )}
-                  <p className="working-maths">
-                    {working.rawWorkingDays.toLocaleString()} working days &minus;{" "}
-                    {working.vacationDays.toLocaleString()} vacation days
-                  </p>
-                </>
-              ) : (
+      {retired ? (
+        <RetirementCelebration
+          motion={settings.motion}
+          firstVisit={!settings.hasCelebrated}
+          onFirstVisit={markCelebrated}
+        >
+          <Countdown label="Retired for" from={retirement} to={now} />
+        </RetirementCelebration>
+      ) : (
+        <Countdown label="Time remaining" from={now} to={retirement} />
+      )}
+
+      {!retired && (
+        <section className="working">
+          <h2 className="section-title">Estimated working time</h2>
+          {working.tracked ? (
+            <>
+              <p className="working-primary">
+                {working.netWorkingDays.toLocaleString()} working days
+              </p>
+              {working.netWorkingWeeks !== null && (
                 <p className="working-secondary">
-                  Not tracked &middot; choose your working days in Settings
+                  {working.netWorkingWeeks.toLocaleString()} weeks
                 </p>
               )}
-            </section>
+              <p className="working-maths">
+                {working.rawWorkingDays.toLocaleString()} working days &minus;{" "}
+                {working.vacationDays.toLocaleString()} vacation days
+              </p>
+              <details className="estimate-details">
+                <summary>How this estimate works</summary>
+                <p>
+                  We count your selected weekdays from tomorrow through the day
+                  before retirement, then subtract a prorated share of your
+                  recurring annual vacation allowance. Public holidays,
+                  carry-over, and already-booked leave are not included.
+                </p>
+              </details>
+            </>
+          ) : (
+            <p className="working-secondary">
+              Not tracked &middot; choose your working days in Settings
+            </p>
           )}
-
-          <p className="message">{message}</p>
-        </>
-      )}
-
-      {editing && (
-        <section className="settings">
-          <label className="field">
-            <span className="field-label">First day of retirement</span>
-            <input
-              type="date"
-              value={settings.firstRetiredDay}
-              onChange={(event) => update({ firstRetiredDay: event.target.value })}
-            />
-            {errors.firstRetiredDay ? (
-              <span className="field-error">{errors.firstRetiredDay}</span>
-            ) : (
-              <span className="field-hint">Counts down to midnight local time.</span>
-            )}
-          </label>
-
-          <div className="field">
-            <span className="field-label">Working days</span>
-            <div className="weekdays">
-              {WEEKDAY_LABELS.map((label, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={settings.workingWeekdays[index] ? "weekday on" : "weekday"}
-                  aria-pressed={settings.workingWeekdays[index]}
-                  onClick={() => toggleWeekday(index)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <label className="field">
-            <span className="field-label">Vacation days per year</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={365}
-              value={settings.vacationDaysPerYear}
-              onChange={(event) =>
-                update({ vacationDaysPerYear: Number(event.target.value) })
-              }
-            />
-            {errors.vacationDaysPerYear && (
-              <span className="field-error">{errors.vacationDaysPerYear}</span>
-            )}
-          </label>
         </section>
       )}
+
+      <p className="message">{message}</p>
     </main>
   );
 }

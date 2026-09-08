@@ -68,13 +68,21 @@ describe("validate", () => {
 
   it("rejects a missing or invalid date", () => {
     expect(validate(DEFAULT_SETTINGS).firstRetiredDay).toBeDefined();
-    expect(validate({ ...VALID, firstRetiredDay: "nope" }).firstRetiredDay).toBeDefined();
+    expect(
+      validate({ ...VALID, firstRetiredDay: "nope" }).firstRetiredDay,
+    ).toBeDefined();
   });
 
   it("rejects out-of-range or fractional vacation days", () => {
-    expect(validate({ ...VALID, vacationDaysPerYear: -1 }).vacationDaysPerYear).toBeDefined();
-    expect(validate({ ...VALID, vacationDaysPerYear: 366 }).vacationDaysPerYear).toBeDefined();
-    expect(validate({ ...VALID, vacationDaysPerYear: 1.5 }).vacationDaysPerYear).toBeDefined();
+    expect(
+      validate({ ...VALID, vacationDaysPerYear: -1 }).vacationDaysPerYear,
+    ).toBeDefined();
+    expect(
+      validate({ ...VALID, vacationDaysPerYear: 366 }).vacationDaysPerYear,
+    ).toBeDefined();
+    expect(
+      validate({ ...VALID, vacationDaysPerYear: 1.5 }).vacationDaysPerYear,
+    ).toBeDefined();
   });
 });
 
@@ -134,15 +142,34 @@ describe("export / import", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("falls back to system motion when the value is unrecognised", () => {
+  it("rejects an unrecognised motion preference", () => {
     const result = importSettings(
       JSON.stringify({
         ...exportSettings(VALID),
         settings: { ...VALID, motion: "disco" },
       }),
     );
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.settings.motion).toBe("system");
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects values that would require type coercion", () => {
+    const result = importSettings(
+      JSON.stringify({
+        ...exportSettings(VALID),
+        settings: { ...VALID, vacationDaysPerYear: "20" },
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects a non-boolean celebration state", () => {
+    const result = importSettings(
+      JSON.stringify({
+        ...exportSettings(VALID),
+        settings: { ...VALID, hasCelebrated: "yes" },
+      }),
+    );
+    expect(result.ok).toBe(false);
   });
 
   it("surfaces the backup timestamp for the confirmation preview", () => {
