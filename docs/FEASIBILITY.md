@@ -181,3 +181,17 @@ path. Only G1 and G2 are existential, and only for their own platform.
 
 This ordering deliberately puts the highest-cost, lowest-flexibility work
 (iOS signing and macOS CI) after the design has stopped moving.
+
+### Which machine does what
+
+Worth stating plainly, because it is easy to assume mobile work implies a Mac:
+
+| Work | Machine |
+|---|---|
+| App implementation, domain logic, tests | Either — pure TypeScript |
+| Android SDK/NDK, `android init`, device builds (G1) | **Linux is fine.** The Android toolchain is Linux-native. |
+| iOS anything (G2) | **Mac only** — see §5.2 |
+| macOS CI runners | Mac/CI only |
+
+So the Linux box stays the primary development machine and the Mac is needed
+only to clear G2 and verify iOS. Only one of the seven gates is Mac-bound.
