@@ -62,12 +62,13 @@ Rules:
 The user selects which weekdays they actually work. Default: Monday–Friday.
 
 - Count every selected weekday in the half-open interval
-  `[today_local, first_retired_day)`.
-- **Today counts as a whole working day** if it is a selected weekday, however
-  little of it is left. Partial days are never fractional. This is the honest
-  simplification: the app cannot know the user's shift hours, and rounding a
-  partial day down would make the number drop by one mid-morning for no visible
-  reason.
+  `[tomorrow_local, first_retired_day)`.
+- **Today is not counted.** Today's work is already underway, so counting it as
+  time still to be worked overstates what is left. The number therefore means
+  "working days still ahead of you", and it decrements cleanly at local
+  midnight rather than needing to know the user's shift hours.
+- Whole days only — never fractional. The last counted day is the final
+  selected weekday before the first retired day.
 - If the user selects **zero** working weekdays, working-time output is not an
   error — the working-time section is replaced with "not tracked". This keeps a
   legitimate configuration (no fixed schedule) out of a validation dead end.
@@ -84,6 +85,10 @@ vacationRemaining = floor(allowancePerYear * (remainingCalendarDays / 365.2425))
 vacationRemaining = clamp(vacationRemaining, 0, rawWorkingDays)
 netWorkingDays    = rawWorkingDays - vacationRemaining
 ```
+
+`remainingCalendarDays` is measured from **tomorrow**, the same start as the
+workday count in §2.3, so the two figures cannot disagree about what "remaining"
+means.
 
 Deliberate simplifications, to be stated in the UI as "estimated":
 

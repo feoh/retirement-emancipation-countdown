@@ -1,5 +1,6 @@
 import {
   DAYS_PER_YEAR,
+  addDaysLocal,
   calendarDaysBetween,
   startOfLocalDay,
 } from "./calendar";
@@ -71,10 +72,13 @@ export function estimateWorkingTime(
     };
   }
 
-  const rawWorkingDays = countWorkingDays(now, firstRetiredDay, weekdays);
+  // Today's work is already underway, so the estimate starts tomorrow.
+  const start = addDaysLocal(startOfLocalDay(now), 1);
+
+  const rawWorkingDays = countWorkingDays(start, firstRetiredDay, weekdays);
   const remainingCalendarDays = Math.max(
     0,
-    calendarDaysBetween(now, firstRetiredDay),
+    calendarDaysBetween(start, firstRetiredDay),
   );
 
   const prorated = Math.floor(

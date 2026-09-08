@@ -21,6 +21,8 @@ const MONDAY_ONLY: WorkingWeekdays = [
 // 2026-06-01 is a Monday.
 const MONDAY = new Date(2026, 5, 1);
 
+// countWorkingDays is the raw half-open-interval primitive; the "start from
+// tomorrow" product rule lives in estimateWorkingTime and is tested there.
 describe("countWorkingDays", () => {
   it("counts a single Mon-Fri week", () => {
     expect(countWorkingDays(MONDAY, new Date(2026, 5, 8), DEFAULT_WORKING_WEEKDAYS)).toBe(5);
@@ -31,11 +33,11 @@ describe("countWorkingDays", () => {
     expect(countWorkingDays(MONDAY, new Date(2026, 5, 5), DEFAULT_WORKING_WEEKDAYS)).toBe(4);
   });
 
-  it("counts today when today is a working day", () => {
+  it("includes the start day when it is a working day", () => {
     expect(countWorkingDays(MONDAY, new Date(2026, 5, 2), DEFAULT_WORKING_WEEKDAYS)).toBe(1);
   });
 
-  it("counts today as a whole day even late in the day", () => {
+  it("ignores the time of day on the start date", () => {
     const lateMonday = new Date(2026, 5, 1, 23, 30);
     expect(countWorkingDays(lateMonday, new Date(2026, 5, 2), DEFAULT_WORKING_WEEKDAYS)).toBe(1);
   });
@@ -75,11 +77,41 @@ describe("estimateWorkingTime", () => {
     expect(result.netWorkingWeeks).toBeNull();
   });
 
-  it("subtracts no vacation when the allowance is zero", () => {
+  it("excludes today, counting from tomorrow", () => {
+    // Mon 1 Jun, retiring Mon 8 Jun: Tue-Fri remain, not Mon-Fri.
     const result = estimateWorkingTime(MONDAY, new Date(2026, 5, 8), DEFAULT_WORKING_WEEKDAYS, 0);
-    expect(result.rawWorkingDays).toBe(5);
+    expect(result.rawWorkingDays).toBe(4);
     expect(result.vacationDays).toBe(0);
-    expect(result.netWorkingDays).toBe(5);
+    expect(result.netWorkingDays).toBe(4);
+  });
+
+  it("excludes today regardless of the time of day", () => {
+    const earlyMonday = estimateWorkingTime(
+      new Date(2026, 5, 1, 0, 1),
+      new Date(2026, 5, 8),
+      DEFAULT_WORKING_WEEKDAYS,
+      0,
+    );
+    const lateMonday = estimateWorkingTime(
+      new Date(2026, 5, 1, 23, 59),
+      new Date(2026, 5, 8),
+      DEFAULT_WORKING_WEEKDAYS,
+      0,
+    );
+    expect(earlyMonday.rawWorkingDays).toBe(4);
+    expect(lateMonday.rawWorkingDays).toBe(4);
+  });
+
+  it("is zero on the last working day, with only the weekend left", () => {
+    // Fri 5 Jun, retiring Mon 8 Jun: only Sat and Sun remain.
+    const result = estimateWorkingTime(
+      new Date(2026, 5, 5),
+      new Date(2026, 5, 8),
+      DEFAULT_WORKING_WEEKDAYS,
+      0,
+    );
+    expect(result.rawWorkingDays).toBe(0);
+    expect(result.netWorkingDays).toBe(0);
   });
 
   it("prorates the annual allowance across the remaining span", () => {
@@ -97,11 +129,11 @@ describe("estimateWorkingTime", () => {
   });
 
   it("never subtracts more vacation than there are working days", () => {
-    // 92 calendar days prorates to 91 vacation days but only 66 are worked,
-    // so the clamp has to engage.
+    // 91 calendar days from tomorrow prorates to 90 vacation days but only 65
+    // are worked, so the clamp has to engage.
     const result = estimateWorkingTime(MONDAY, new Date(2026, 8, 1), DEFAULT_WORKING_WEEKDAYS, 365);
-    expect(result.rawWorkingDays).toBe(66);
-    expect(result.vacationDays).toBe(66);
+    expect(result.rawWorkingDays).toBe(65);
+    expect(result.vacationDays).toBe(65);
     expect(result.netWorkingDays).toBe(0);
   });
 
@@ -111,8 +143,9 @@ describe("estimateWorkingTime", () => {
   });
 
   it("computes weeks from the selected weekday count", () => {
+    // From Tue 2 Jun to Mon 29 Jun exclusive: Mondays on 8, 15 and 22.
     const result = estimateWorkingTime(MONDAY, new Date(2026, 5, 29), MONDAY_ONLY, 0);
-    expect(result.rawWorkingDays).toBe(4);
-    expect(result.netWorkingWeeks).toBe(4);
+    expect(result.rawWorkingDays).toBe(3);
+    expect(result.netWorkingWeeks).toBe(3);
   });
 });
