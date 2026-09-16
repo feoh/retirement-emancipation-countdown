@@ -1,8 +1,8 @@
 # Tauri 2 Mobile Feasibility
 
-Date: 2026-09-08
-Verdict: **GO, with iOS gated on a macOS machine and five criteria still
-unverified on hardware.**
+Date: 2026-09-16
+Verdict: **GO, with Apple project generation and unsigned builds verified on
+macOS; physical-device gates remain unverified.**
 
 ## 1. What was actually verified, and where
 
@@ -21,7 +21,7 @@ could be checked.
 | 5 | Store / fs / dialog / clipboard / os link | ✅ Pass | Registered in `lib.rs`, compiled |
 | 6 | Haptics plugin resolves | ⚠️ Partial | Resolves at 2.3.3 but is `cfg`-gated to mobile, so it **was never compiled** |
 | 7 | Android build | ❌ Blocked | No SDK/NDK on this host — §5.1 |
-| 8 | iOS build | ❌ Blocked | Structurally impossible here — §5.2 |
+| 8 | iOS build | ⚠️ Partial | `tauri ios init`, Rust target check, and unsigned device/simulator builds pass on macOS; physical-device run still needs hardware |
 | 9 | Canvas performance | ❌ Deferred | Not measurable on a desktop GPU — §6 |
 | 10 | Safe areas, device persistence, backup eligibility | ❌ Deferred | Requires hardware — §6 |
 
@@ -116,11 +116,13 @@ error: unrecognized subcommand 'ios'
   tip: a similar subcommand exists: 'icon'
 ```
 
-The iOS commands are compiled out on non-macOS hosts. No amount of local
-configuration reaches an iOS build from Linux — it requires the confirmed-
-available Mac. Targets `aarch64-apple-ios`, `aarch64-apple-ios-sim`,
-`x86_64-apple-ios` must be installed there. `minimumSystemVersion` is pinned to
-14.0.
+The iOS commands are compiled out on non-macOS hosts. On the Mac, `tauri ios
+init` completed successfully after installing XcodeGen and libimobiledevice,
+and generated the committed project under `src-tauri/gen/apple/`. Targets
+`aarch64-apple-ios`, `aarch64-apple-ios-sim`, and `x86_64-apple-ios` are
+installed. Both an unsigned device-target IPA and an arm64 simulator app build
+pass; a signed physical-device install still requires a connected, provisioned
+iPhone. `minimumSystemVersion` is pinned to 14.0.
 
 ### 5.3 CI constraints
 
@@ -177,7 +179,8 @@ path. Only G1 and G2 are existential, and only for their own platform.
    workday counting, proration — is pure TypeScript and needs no device,
    so it can be written and tested before the SDKs are in place.
 2. Stand up **Android** locally (SDK + NDK + targets), then clear G1, G3–G7.
-3. Add **iOS** on the Mac, clear G2, then wire macOS CI last.
+3. Add **iOS** on the Mac, clear the build half of G2, then use a provisioned
+   physical iPhone to clear the device half before wiring macOS CI last.
 
 This ordering deliberately puts the highest-cost, lowest-flexibility work
 (iOS signing and macOS CI) after the design has stopped moving.
@@ -190,7 +193,8 @@ Worth stating plainly, because it is easy to assume mobile work implies a Mac:
 |---|---|
 | App implementation, domain logic, tests | Either — pure TypeScript |
 | Android SDK/NDK, `android init`, device builds (G1) | **Linux is fine.** The Android toolchain is Linux-native. |
-| iOS anything (G2) | **Mac only** — see §5.2 |
+| iOS project generation and builds (G2) | **Mac only** — verified; see §5.2 |
+| iOS physical-device run and signing (G2) | **Mac + provisioned iPhone** |
 | macOS CI runners | Mac/CI only |
 
 So the Linux box stays the primary development machine and the Mac is needed

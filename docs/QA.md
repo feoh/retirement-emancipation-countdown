@@ -1,6 +1,6 @@
 # Retirement Countdown — QA Status
 
-Last updated: 2026-09-16
+Last updated: 2026-09-16 (Mac iOS verification)
 
 ## Automated baseline
 
@@ -34,7 +34,7 @@ checks on pushes to `main` and pull requests.
 
 These remain release blockers and must not be inferred from desktop-green CI. Status
 as of 2026-09-16, cleared from the Linux host per `FEASIBILITY.md` §8 (see that
-document §9 for full evidence and remaining caveats):
+document §7 for the criteria and remaining caveats):
 
 - [x] G1: Android SDK + NDK installed, all four Rust targets added, `tauri android init`
       and a debug `tauri android build` succeed for `aarch64` (the real device arch).
@@ -43,8 +43,12 @@ document §9 for full evidence and remaining caveats):
       estimate, daily message), and the native date picker all render and function
       correctly with no crash. **Still open:** a true physical Android device has not
       run this build; only an AVD emulator was available on this host.
-- [ ] G2: initialize iOS targets on macOS and run a physical iPhone build. **Blocked —
-      Mac only**, per `FEASIBILITY.md` §5.2.
+- [x] G2 (build half): on macOS, `tauri ios init` completed after installing the
+      required Xcode support tools; `aarch64-apple-ios`, `aarch64-apple-ios-sim`,
+      and `x86_64-apple-ios` Rust targets are installed. `cargo check --target
+      aarch64-apple-ios` passed, and unsigned `tauri ios build --debug --target
+      aarch64` plus an arm64 simulator build both completed. **Still open:** no
+      physical iPhone was connected for install/run verification.
 - [x] G3 (Android manifest half only): `android:allowBackup="true"` is now explicit in
       `AndroidManifest.xml` (previously relying on the implicit default). Confirmed the
       settings file (`settings.json`) is written directly under the app's private data
@@ -59,16 +63,17 @@ document §9 for full evidence and remaining caveats):
 - [ ] G6: safe-area CSS (`viewport-fit=cover`, `env(safe-area-inset-*)`) is already in
       place in `index.html`/`App.css`. Visual confirmation on a notched/cutout device
       still needed.
-- [x] G7: `tauri-plugin-haptics` 2.3.3 compiled and linked cleanly into the Android debug
-      build (Kotlin `HapticsPlugin` compiled, native lib linked, app runs without a
-      JNI/link error) — the "never been built for mobile" open question from the
-      feasibility doc is resolved.
+- [x] G7: `tauri-plugin-haptics` 2.3.3 compiled and linked cleanly into both the Android
+      debug build and `cargo check --target aarch64-apple-ios` (Kotlin `HapticsPlugin`
+      compiled on Android; the iOS Rust target resolved the mobile plugin) — the
+      "never been built for mobile" open question from the feasibility doc is resolved.
 - [ ] Exercise clean install, suspend/resume, local-midnight retirement transition, timezone change,
       reduced motion, offline operation, and same-platform/cross-platform transfer on devices.
 
 No automated release-blocking defects are open. Store submission remains blocked
-until the physical-device matrix above is complete, and in particular until G2, G4,
-G5, and a real-device G1/G3 pass are done on actual hardware.
+until the physical-device matrix above is complete, and in particular until the
+physical iOS G2 run, G4, G5, and a real-device G1/G3 pass are done on actual
+hardware.
 
 ### Testing-environment finding: dialog touch input on the headless AVD
 
@@ -85,3 +90,12 @@ This blocked exercising G4 (native picker/fs scope) and the backup export/import
 from the QA task description. Needs reproduction on a physical device or a
 non-headless/GPU-accelerated emulator before treating it as either a real product bug
 or purely a headless-AVD artifact.
+
+### Mac iOS build verification (2026-09-16)
+
+On the macOS build host, `tauri ios init` generated and committed the Xcode project
+under `src-tauri/gen/apple/`. The device-target build produces an unsigned IPA, and
+the arm64 simulator target installs and launches on an iPhone 17 Pro simulator. The
+simulator screenshot confirms the Dynamic Island safe-area layout. This verifies the
+Apple project generation and compile/link path, but it is not a substitute for a
+signed physical-device install, backup restore, picker interaction, or haptics test.

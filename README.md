@@ -33,7 +33,8 @@ Desktop implementation complete; mobile delivery gates remain.
 - ✅ Android SDK + NDK installed and a debug `tauri android build` succeeds and runs
   (verified on an emulator; a physical Android device build is still outstanding —
   see `docs/QA.md`)
-- ⬜ iOS build (macOS-only — see `FEASIBILITY.md` §5.2)
+- ✅ iOS Xcode project generation and unsigned device/simulator builds verified on macOS;
+  physical iPhone verification remains outstanding (see `docs/QA.md`)
 
 ## Development
 
@@ -72,8 +73,9 @@ npm run tauri android init && npm run tauri android dev
 npm run tauri ios init && npm run tauri ios dev      # macOS only
 ```
 
-Both need extra toolchain setup that is not yet in place; see
-[`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) §5.
+Both need platform-specific toolchains and signing/device setup; see
+[`docs/FEASIBILITY.md`](docs/FEASIBILITY.md) §5 and the current gate status in
+[`docs/QA.md`](docs/QA.md).
 
 ## License
 
