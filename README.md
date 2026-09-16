@@ -30,7 +30,9 @@ Desktop implementation complete; mobile delivery gates remain.
 - ✅ Onboarding, dashboard, and accessible settings backed by versioned `plugin-store` persistence
 - ✅ File/clipboard backup transfer with strict previewed import
 - ✅ Reduced-motion-aware retirement celebration with replayable canvas fireworks
-- ⬜ Android build (needs SDK + NDK — see `FEASIBILITY.md` §5.1)
+- ✅ Android SDK + NDK installed and a debug `tauri android build` succeeds and runs
+  (verified on an emulator; a physical Android device build is still outstanding —
+  see `docs/QA.md`)
 - ⬜ iOS build (macOS-only — see `FEASIBILITY.md` §5.2)
 
 ## Development
