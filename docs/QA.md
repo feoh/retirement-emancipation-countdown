@@ -23,6 +23,10 @@ strict import validation, stored-settings migration/recovery, deterministic
 message rotation, motion-preference precedence, onboarding form behavior, and
 previewed import confirmation.
 
+Re-verified 2026-09-16 (Prettier, ESLint, `tsc`, Vitest across all four
+timezones, `cargo fmt`/Clippy/`cargo check`, and the fetch/XHR/WebSocket source
+scan): identical results, no regressions.
+
 GitHub Actions repeats frontend, Rust, timezone, and integrated Tauri build
 checks on pushes to `main` and pull requests.
 
@@ -47,10 +51,8 @@ document §9 for full evidence and remaining caveats):
       root, outside the `cache/`, `code_cache/`, and `no_backup/` directories Auto Backup
       excludes by default. **Still open:** an actual Auto Backup round-trip (`bmgr`) to a
       second device, and the entire iOS half (store file location, exclusion flag).
-- [ ] G4: could not exercise interactively — this host's headless AVD did not deliver
-      `adb input tap` events reliably past the first UI interaction, so the native
-      save/open dialog was never reached. Needs a physical device or a working-input
-      emulator/Android Studio session.
+- [ ] G4: could not exercise interactively — see the dialog-input finding below.
+      Needs a physical device or a working-input emulator/Android Studio session.
 - [ ] G5: measure fireworks at a 60 fps target / 30 fps floor and verify background teardown.
       Not measurable on a headless `swiftshader` software-rendered emulator; needs a
       physical mid-range Android device.
@@ -67,3 +69,19 @@ document §9 for full evidence and remaining caveats):
 No automated release-blocking defects are open. Store submission remains blocked
 until the physical-device matrix above is complete, and in particular until G2, G4,
 G5, and a real-device G1/G3 pass are done on actual hardware.
+
+### Testing-environment finding: dialog touch input on the headless AVD
+
+While smoke-testing on a `-no-window -gpu swiftshader_indirect` AVD (2026-09-16, this
+is a **testing-tool limitation, not a confirmed app defect**): `adb shell input tap`
+reliably opens the app's first native dialog (the HTML date input's Android
+`DatePickerDialog`), and logcat confirms the injected `ACTION_DOWN`/`ACTION_UP` land at
+the exact coordinates requested. But no subsequent tap — on a calendar day, `SET`,
+`CANCEL`, or a plain dashboard button with no dialog open — had any visible effect,
+reproduced across two fresh AVDs. Tapping around a stock Settings app on the same
+emulator worked normally, so basic input injection is not broken system-wide.
+
+This blocked exercising G4 (native picker/fs scope) and the backup export/import flow
+from the QA task description. Needs reproduction on a physical device or a
+non-headless/GPU-accelerated emulator before treating it as either a real product bug
+or purely a headless-AVD artifact.
