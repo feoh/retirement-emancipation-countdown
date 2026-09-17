@@ -1,6 +1,6 @@
 # Retirement Countdown — QA Status
 
-Last updated: 2026-09-16 (Mac iOS verification)
+Last updated: 2026-09-17 (macOS automated baseline; iOS toolchain blocker)
 
 ## Automated baseline
 
@@ -27,6 +27,11 @@ Re-verified 2026-09-16 (Prettier, ESLint, `tsc`, Vitest across all four
 timezones, `cargo fmt`/Clippy/`cargo check`, and the fetch/XHR/WebSocket source
 scan): identical results, no regressions.
 
+Re-verified 2026-09-17 on the **macOS** host (Prettier, ESLint, `tsc`, Vitest in
+all four timezones, `cargo fmt`, `cargo clippy --all-targets -D warnings`, and
+`cargo check --target aarch64-apple-ios`): identical results to the Linux host,
+confirming the baseline is not Linux-specific.
+
 GitHub Actions repeats frontend, Rust, timezone, and integrated Tauri build
 checks on pushes to `main` and pull requests.
 
@@ -47,8 +52,10 @@ document §7 for the criteria and remaining caveats):
       required Xcode support tools; `aarch64-apple-ios`, `aarch64-apple-ios-sim`,
       and `x86_64-apple-ios` Rust targets are installed. `cargo check --target
       aarch64-apple-ios` passed, and unsigned `tauri ios build --debug --target
-      aarch64` plus an arm64 simulator build both completed. **Still open:** no
-      physical iPhone was connected for install/run verification.
+      aarch64` plus an arm64 simulator build both completed. **Still open:** the
+      physical-device install/run is blocked on tooling, not on hardware
+      availability — a phone is now connected but the Mac cannot target it. See
+      "Blocker: iOS toolchain vs device OS" below.
 - [x] G3 (Android manifest half only): `android:allowBackup="true"` is now explicit in
       `AndroidManifest.xml` (previously relying on the implicit default). Confirmed the
       settings file (`settings.json`) is written directly under the app's private data
@@ -99,3 +106,25 @@ the arm64 simulator target installs and launches on an iPhone 17 Pro simulator. 
 simulator screenshot confirms the Dynamic Island safe-area layout. This verifies the
 Apple project generation and compile/link path, but it is not a substitute for a
 signed physical-device install, backup restore, picker interaction, or haptics test.
+
+### Blocker: iOS toolchain vs device OS (2026-09-17)
+
+A physical iPhone (`iPhone17,3`) was connected for the first time, but no iOS build
+of any kind could run on the Mac. Two stacked problems, both environmental:
+
+1. **No eligible build destinations.** `xcodebuild -showdestinations` lists the device
+   and the generic "Any iOS Device" as *ineligible*, with `iOS 26.5 is not installed.
+   Please download and install the platform from Xcode > Settings > Components.` No
+   iOS simulator runtime matching the SDK is installed either (26.3 and 26.4 only),
+   so the 2026-09-16 simulator result above is not currently reproducible on this
+   host. The Xcode iOS platform component has to be re-downloaded.
+2. **Device OS is newer than the SDK.** The phone runs **iOS 27.0** (build `24A435`)
+   while the installed Xcode is **26.6**, whose newest iOS SDK is 26.5. Even with the
+   platform component restored, deploying to this device requires Xcode 27.
+
+The Rust half is unaffected: `cargo check --target aarch64-apple-ios` passes. Signing
+prerequisites are in place (Apple Development identity, team `9CF8T929TR`, and
+provisioning profiles present), so signing is not the blocker.
+
+Consequence: G2's physical-device half, plus the iOS halves of G3-G6, stay open until
+Xcode 27 is installed. Nothing here indicates an application defect.
