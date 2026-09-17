@@ -2,7 +2,7 @@ name: retirement-countdown
 options:
   bundleIdPrefix: com.feoh.retirementcountdown
   deploymentTarget:
-    iOS: 14.0
+    iOS: 15.0
 fileGroups: [../../src]
 configs:
   debug: debug
@@ -12,6 +12,8 @@ settingGroups:
     base:
       PRODUCT_NAME: Retirement Countdown
       PRODUCT_BUNDLE_IDENTIFIER: com.feoh.retirementcountdown
+      DEVELOPMENT_TEAM: 9CF8T929TR
+      CODE_SIGN_STYLE: Automatic
 targetTemplates:
   app:
     type: application
@@ -53,6 +55,8 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         CFBundleShortVersionString: 0.1.0
         CFBundleVersion: "0.1.0"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
     entitlements:
       path: retirement-countdown_iOS/retirement-countdown_iOS.entitlements
     scheme:

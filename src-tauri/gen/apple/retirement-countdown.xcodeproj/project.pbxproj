@@ -17,6 +17,7 @@
 		5BB5FAA7F8616A8C56E32A16 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF7EB99ABE258DD77DCE50B6 /* MetalKit.framework */; };
 		81836C92F0F37E03FE2ECEFA /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CCD74520DDB096886EFECABB /* libapp.a */; };
 		89FC0AB10659B8BEC0162CE9 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 6CBC1F777DB73BC5066FDB6E /* assets */; };
+		CBF5142998BEDA7A10F6791E /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = B927734FC1CFF9C26085E8E4 /* libapp.a */; };
 		D50E94D052A2091ECF5DCD9E /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6FEA57AC572243472EC5EA8 /* CoreGraphics.framework */; };
 		FF5FFF7C399F5B6052C0349A /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 61A1E1740D8E940219FD2DDE /* main.mm */; };
 /* End PBXBuildFile section */
@@ -33,6 +34,7 @@
 		A79440C40BD3FFBEEEEEE644 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
 		A7DF32E749CA38D4810BD591 /* retirement-countdown_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "retirement-countdown_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10123322565151D4F038B09 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		B927734FC1CFF9C26085E8E4 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		B994F37D672B2A493731F8DE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CCD74520DDB096886EFECABB /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		D5C8AD6A9D840A780D086413 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
@@ -116,6 +118,22 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		7899A9330C9290A9E3DFCD70 /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				99A4430D7390A63220674F1C /* debug */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		99A4430D7390A63220674F1C /* debug */ = {
+			isa = PBXGroup;
+			children = (
+				B927734FC1CFF9C26085E8E4 /* libapp.a */,
+			);
+			path = debug;
+			sourceTree = "<group>";
+		};
 		A45E9B900039E605CB7C5D9F /* retirement-countdown */ = {
 			isa = PBXGroup;
 			children = (
@@ -128,6 +146,7 @@
 		AA79921E3C56FDB194645029 /* Externals */ = {
 			isa = PBXGroup;
 			children = (
+				7899A9330C9290A9E3DFCD70 /* arm64 */,
 			);
 			path = Externals;
 			sourceTree = "<group>";
@@ -148,6 +167,13 @@
 			);
 			name = src;
 			path = ../../src;
+			sourceTree = "<group>";
+		};
+		"TEMP_D3C76ECC-0D55-46B4-A717-69F642967203" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -182,6 +208,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					78AE129C407A39FC16A46C61 = {
+						DevelopmentTeam = 9CF8T929TR;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = A93C7347E5BBFA5D73689165 /* Build configuration list for PBXProject "retirement-countdown" */;
@@ -211,6 +241,7 @@
 				2DA73990680582128F2E1EB7 /* Assets.xcassets in Resources */,
 				130ECD2F698B4803544713BB /* LaunchScreen.storyboard in Resources */,
 				89FC0AB10659B8BEC0162CE9 /* assets in Resources */,
+				CBF5142998BEDA7A10F6791E /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,6 +293,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "retirement-countdown_iOS/retirement-countdown_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9CF8T929TR;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -328,7 +361,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -390,7 +423,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -412,6 +445,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "retirement-countdown_iOS/retirement-countdown_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 9CF8T929TR;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
 				FRAMEWORK_SEARCH_PATHS = (
