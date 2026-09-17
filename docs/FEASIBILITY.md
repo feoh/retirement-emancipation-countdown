@@ -121,8 +121,17 @@ init` completed successfully after installing XcodeGen and libimobiledevice,
 and generated the committed project under `src-tauri/gen/apple/`. Targets
 `aarch64-apple-ios`, `aarch64-apple-ios-sim`, and `x86_64-apple-ios` are
 installed. Both an unsigned device-target IPA and an arm64 simulator app build
-pass; a signed physical-device install still requires a connected, provisioned
-iPhone. `minimumSystemVersion` is pinned to 14.0.
+pass. `minimumSystemVersion` is pinned to 15.0 (raised from 14.0 on 2026-09-17;
+Xcode 27 supports 15.0 and up and rejects anything older).
+
+Updated 2026-09-17: **G2 is cleared.** A signed debug build installs, launches,
+and runs correctly on a physical iPhone (iOS 27.0) using automatic signing. This
+required Xcode 27 and, more importantly, declaring `UIApplicationSceneManifest`
+with `UIApplicationSupportsMultipleScenes` set to true, without which the app
+traps at launch on iOS 26+ because tao 0.35.3 never installs its scene delegate.
+See `QA.md` for the full diagnosis. iOS **release** builds still fail to link
+due to an Xcode 27/swift-rs symbol-visibility interaction, which blocks store
+submission but not device testing.
 
 ### 5.3 CI constraints
 
